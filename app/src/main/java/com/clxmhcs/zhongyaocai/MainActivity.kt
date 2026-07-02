@@ -25,8 +25,11 @@ class MainActivity : ComponentActivity() {
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AppRepository(application)
+    private val calculations = CalculationStore(application)
     private val json = Json { encodeDefaults = true }
     val data: StateFlow<AppData> = repository.state
+    val costHistory: StateFlow<List<CostCalculationHistory>> = calculations.costHistory
+    val usageHistory: StateFlow<List<UsageCalculationHistory>> = calculations.usageHistory
 
     fun addHerb(name: String, stock: Int, warning: Int, daily: Int, price: Double, done: (String?) -> Unit) = viewModelScope.launch { done(repository.addHerb(name, stock, warning, daily, price)) }
     fun updateHerb(herb: Herb, done: (String?) -> Unit) = viewModelScope.launch { done(repository.updateHerb(herb)) }
@@ -51,14 +54,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteProfile(id: String) = viewModelScope.launch { repository.deleteHerbProfile(id) }
     fun overwriteHerbs(items: List<Herb>) = viewModelScope.launch { repository.overwriteHerbs(items) }
 
+    fun saveCostHistory(entry: CostCalculationHistory) = viewModelScope.launch { calculations.saveCost(entry) }
+    fun deleteCostHistory(id: String) = viewModelScope.launch { calculations.deleteCost(id) }
+    fun clearCostHistory() = viewModelScope.launch { calculations.clearCost() }
+    fun saveUsageHistory(entry: UsageCalculationHistory) = viewModelScope.launch { calculations.saveUsage(entry) }
+    fun deleteUsageHistory(id: String) = viewModelScope.launch { calculations.deleteUsage(id) }
+    fun clearUsageHistory() = viewModelScope.launch { calculations.clearUsage() }
+
     fun setResetPassword(password: String, done: (String?) -> Unit) = viewModelScope.launch {
         val trimmed = password.trim()
-        if (trimmed.isEmpty()) {
-            done("密码不能为空，请重新点击“药材余量重置”设置密码。")
-        } else {
-            val next = data.value.copy(stockResetPasswordHash = sha256(trimmed))
-            done(repository.restoreBackup(json.encodeToString(AppData.serializer(), next)))
-        }
+        if (trimmed.isEmpty()) done("密码不能为空，请重新点击“药材余量重置”设置密码。")
+        else done(repository.restoreBackup(json.encodeToString(AppData.serializer(), data.value.copy(stockResetPasswordHash = sha256(trimmed)))))
     }
 
     fun verifyResetPassword(password: String, done: (ResetResult) -> Unit) = viewModelScope.launch {
