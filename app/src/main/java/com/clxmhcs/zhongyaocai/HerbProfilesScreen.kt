@@ -5,14 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
@@ -57,38 +56,8 @@ fun HerbProfilesScreen(data: AppData, viewModel: MainViewModel) {
 
 @Composable
 private fun ProfileEditorDialog(initial: HerbProfile, viewModel: MainViewModel, onDismiss: () -> Unit) {
-    var name by remember { mutableStateOf(initial.name) }
-    var alias by remember { mutableStateOf(initial.alias) }
-    var part by remember { mutableStateOf(initial.medicinalPart) }
-    var flavor by remember { mutableStateOf(initial.natureFlavor) }
-    var meridian by remember { mutableStateOf(initial.meridian) }
-    var efficacy by remember { mutableStateOf(initial.efficacy) }
-    var indications by remember { mutableStateOf(initial.indications) }
-    var compatibility by remember { mutableStateOf(initial.compatibility) }
-    var dosage by remember { mutableStateOf(initial.usageDosage) }
-    var contraindication by remember { mutableStateOf(initial.contraindication) }
-    var error by remember { mutableStateOf<String?>(null) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initial.name.isBlank()) "新增药材资料" else "编辑药材资料") },
-        text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                item { OutlinedTextField(name, { name = it }, label = { Text("药材名（必填）") }, modifier = Modifier.fillMaxWidth()) }
-                item { ProfileField("别名", alias) { alias = it } }
-                item { ProfileField("药用部位", part) { part = it } }
-                item { ProfileField("性味", flavor) { flavor = it } }
-                item { ProfileField("归经", meridian) { meridian = it } }
-                item { ProfileField("功效", efficacy) { efficacy = it } }
-                item { ProfileField("主治", indications) { indications = it } }
-                item { ProfileField("配伍", compatibility) { compatibility = it } }
-                item { ProfileField("用法用量", dosage) { dosage = it } }
-                item { ProfileField("禁忌", contraindication) { contraindication = it } }
-                error?.let { item { Text(it, color = Color.Red) } }
-            }
-        },
-        confirmButton = { TextButton(onClick = { if (name.trim().isEmpty()) error = "药材名不能为空" else { viewModel.saveProfile(initial.copy(name = name.trim(), alias = alias.trim(), medicinalPart = part.trim(), natureFlavor = flavor.trim(), meridian = meridian.trim(), efficacy = efficacy.trim(), indications = indications.trim(), compatibility = compatibility.trim(), usageDosage = dosage.trim(), contraindication = contraindication.trim(), updatedAt = System.currentTimeMillis())); onDismiss() } }) { Text("保存") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
-    )
+    var name by remember { mutableStateOf(initial.name) }; var alias by remember { mutableStateOf(initial.alias) }; var part by remember { mutableStateOf(initial.medicinalPart) }; var flavor by remember { mutableStateOf(initial.natureFlavor) }; var meridian by remember { mutableStateOf(initial.meridian) }; var efficacy by remember { mutableStateOf(initial.efficacy) }; var indications by remember { mutableStateOf(initial.indications) }; var compatibility by remember { mutableStateOf(initial.compatibility) }; var dosage by remember { mutableStateOf(initial.usageDosage) }; var contraindication by remember { mutableStateOf(initial.contraindication) }; var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(if (initial.name.isBlank()) "新增药材资料" else "编辑药材资料") }, text = { LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) { item { OutlinedTextField(name, { name = it }, label = { Text("药材名（必填）") }, modifier = Modifier.fillMaxWidth()) }; item { ProfileField("别名", alias) { alias = it } }; item { ProfileField("药用部位", part) { part = it } }; item { ProfileField("性味", flavor) { flavor = it } }; item { ProfileField("归经", meridian) { meridian = it } }; item { ProfileField("功效", efficacy) { efficacy = it } }; item { ProfileField("主治", indications) { indications = it } }; item { ProfileField("配伍", compatibility) { compatibility = it } }; item { ProfileField("用法用量", dosage) { dosage = it } }; item { ProfileField("禁忌", contraindication) { contraindication = it } }; error?.let { item { Text(it, color = Color.Red) } } } }, confirmButton = { TextButton(onClick = { if (name.trim().isEmpty()) error = "药材名不能为空" else { viewModel.saveProfile(initial.copy(name = name.trim(), alias = alias.trim(), medicinalPart = part.trim(), natureFlavor = flavor.trim(), meridian = meridian.trim(), efficacy = efficacy.trim(), indications = indications.trim(), compatibility = compatibility.trim(), usageDosage = dosage.trim(), contraindication = contraindication.trim(), updatedAt = System.currentTimeMillis())); onDismiss() } }) { Text("保存") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
 }
 
 @Composable
