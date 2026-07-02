@@ -31,7 +31,7 @@ val AppOrange = Color(0xFFFF9D3D)
 val AppPaleGreen = Color(0xFFF2FAEF)
 
 enum class AppRoute(val title: String) {
-    Home(""), Search("快速查询"), InventoryOverview("药材余量总览"), Overview7Days("余量不足7天药材"), Overview14Days("余量不足14天药材"), LowStock("低库存药材"), Quick("快速入库 / 支出"), FastInbound("快速入库 / 支出"), FastOutbound("快速入库 / 支出"), HighValue("高价值药材"), HerbSettings("药材信息设置"), PrescriptionUsage("处方用量可用天数测算"), Prescriptions("处方历史记录"), PrescriptionOverview("处方总览"), TotalPrice("药方总价计算"), Database("数据库管理"), AddHerb("新增药材"), AddPrescription("保存处方"), Manual("APP说明书"), Profiles("药材资料录入"), HistoryDetail("历史记录明细"), InboundHistory("入库明细"), PrescriptionDetail("处方详情")
+    Home(""), Search("快速查询"), InventoryOverview("药材余量总览"), Overview7Days("余量不足7天药材"), Overview14Days("余量不足14天药材"), LowStock("低库存药材"), Quick("快速入库 / 支出"), FastInbound("快速入库 / 支出"), FastOutbound("快速入库 / 支出"), HighValue("高价值药材"), HerbSettings("药材信息设置"), PriceSettings("设置药材价格"), WarningSettings("药材预警信息设置 / 删除药材"), PrescriptionUsage("处方用量可用天数测算"), Prescriptions("处方历史记录"), PrescriptionOverview("处方总览"), TotalPrice("药方总价计算"), Database("数据库管理"), AddHerb("新增药材"), AddPrescription("保存处方"), Manual("APP说明书"), Profiles("药材资料录入"), HistoryDetail("历史记录明细"), InboundHistory("入库明细"), PrescriptionDetail("处方详情")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,14 +68,16 @@ fun AppRoot(viewModel: MainViewModel) {
                 AppRoute.LowStock -> LowStockScreen(data)
                 AppRoute.Quick, AppRoute.FastInbound, AppRoute.FastOutbound -> QuickInOutScreen(data, viewModel, { go(AppRoute.HistoryDetail) }, { go(AppRoute.InboundHistory) })
                 AppRoute.HighValue -> HighValueHerbsScreen(data)
-                AppRoute.HerbSettings -> HerbListScreen(data, viewModel, { go(AppRoute.AddHerb) }, { go(AppRoute.LowStock) })
+                AppRoute.HerbSettings -> HerbSettingsHubScreen({ go(AppRoute.AddHerb) }, { go(AppRoute.PriceSettings) }, { go(AppRoute.WarningSettings) })
+                AppRoute.PriceSettings -> PriceSettingsScreen(data, viewModel)
+                AppRoute.WarningSettings -> WarningSettingsScreen(data, viewModel)
                 AppRoute.PrescriptionUsage -> PrescriptionUsageScreen(data)
                 AppRoute.Prescriptions -> PrescriptionHistoryScreen(data, viewModel, { go(AppRoute.PrescriptionOverview) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
                 AppRoute.PrescriptionOverview -> PrescriptionOverviewScreen(data, viewModel, { go(AppRoute.AddPrescription) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
                 AppRoute.TotalPrice -> PrescriptionCostCalculatorScreen(data)
                 AppRoute.Database -> DatabaseScreen(data, viewModel, ::go)
-                AppRoute.AddHerb -> AddHerbScreen(data, viewModel) { route = AppRoute.HerbSettings }
-                AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel) { route = AppRoute.Prescriptions }
+                AppRoute.AddHerb -> AddHerbScreen(data, viewModel) { route = AppRoute.HerbSettings; parent = AppRoute.Home }
+                AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel) { route = AppRoute.Prescriptions; parent = AppRoute.Home }
                 AppRoute.Manual -> ManualScreen(expandAll)
                 AppRoute.Profiles -> HerbProfilesScreen(data, viewModel)
                 AppRoute.HistoryDetail -> HistoryDetailScreen(data)
