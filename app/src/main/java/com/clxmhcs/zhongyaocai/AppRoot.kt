@@ -74,7 +74,7 @@ fun AppRoot(viewModel: MainViewModel) {
                 AppRoute.PrescriptionUsage -> PrescriptionUsageScreen(data)
                 AppRoute.Prescriptions -> PrescriptionHistoryScreen(data, viewModel, { go(AppRoute.PrescriptionOverview) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
                 AppRoute.PrescriptionOverview -> PrescriptionOverviewScreen(data, viewModel, { go(AppRoute.AddPrescription) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
-                AppRoute.TotalPrice -> PrescriptionCostCalculatorScreen(data)
+                AppRoute.TotalPrice -> IOSPrescriptionCostCalculatorScreen(data, viewModel)
                 AppRoute.Database -> DatabaseScreen(data, viewModel, ::go)
                 AppRoute.AddHerb -> AddHerbScreen(data, viewModel) { route = AppRoute.HerbSettings; parent = AppRoute.Home }
                 AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel) { route = AppRoute.Prescriptions; parent = AppRoute.Home }
