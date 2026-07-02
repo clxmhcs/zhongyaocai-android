@@ -36,8 +36,9 @@ val AppOrange = Color(0xFFFF9D3D)
 val AppPaleGreen = Color(0xFFF2FAEF)
 
 enum class AppRoute(val title: String) {
-    Home("中药材管理"), Herbs("药材库"), Quick("快速入库 / 支出"), Prescriptions("处方总览"), Database("数据库管理"),
-    AddHerb("新增药材"), LowStock("低库存药材"), AddPrescription("保存处方"), Manual("APP说明书"), Profiles("药材资料录入")
+    Home("药材余量总览"), Herbs("药材库"), Quick("快速入库 / 支出"), Prescriptions("处方总览"), Database("数据库管理"),
+    AddHerb("新增药材"), LowStock("低库存药材"), AddPrescription("保存处方"), Manual("APP说明书"), Profiles("药材资料录入"),
+    HistoryDetail("历史记录明细"), InboundHistory("入库明细")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,6 +56,7 @@ fun AppRoot(viewModel: MainViewModel) {
                         route = when (route) {
                             AppRoute.AddHerb, AppRoute.LowStock -> AppRoute.Herbs
                             AppRoute.AddPrescription -> AppRoute.Prescriptions
+                            AppRoute.HistoryDetail, AppRoute.InboundHistory -> AppRoute.Quick
                             else -> AppRoute.Database
                         }
                     }) { Icon(Icons.Default.ArrowBack, "返回") }
@@ -77,7 +79,7 @@ fun AppRoot(viewModel: MainViewModel) {
             when (route) {
                 AppRoute.Home -> HomeScreen(data) { route = it }
                 AppRoute.Herbs -> HerbListScreen(data, viewModel, onAdd = { route = AppRoute.AddHerb }, onLowStock = { route = AppRoute.LowStock })
-                AppRoute.Quick -> QuickInOutScreen(data, viewModel)
+                AppRoute.Quick -> QuickInOutScreen(data, viewModel, onHistoryDetail = { route = AppRoute.HistoryDetail }, onInboundDetail = { route = AppRoute.InboundHistory })
                 AppRoute.Prescriptions -> PrescriptionOverviewScreen(data, viewModel, onAdd = { route = AppRoute.AddPrescription })
                 AppRoute.Database -> DatabaseScreen(data, viewModel, onRoute = { route = it })
                 AppRoute.AddHerb -> AddHerbScreen(data, viewModel, onDone = { route = AppRoute.Herbs })
@@ -85,6 +87,8 @@ fun AppRoot(viewModel: MainViewModel) {
                 AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel, onDone = { route = AppRoute.Prescriptions })
                 AppRoute.Manual -> ManualScreen()
                 AppRoute.Profiles -> HerbProfilesScreen(data, viewModel)
+                AppRoute.HistoryDetail -> HistoryDetailScreen(data)
+                AppRoute.InboundHistory -> InboundHistoryScreen(data)
             }
         }
     }
