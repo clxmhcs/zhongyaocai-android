@@ -73,11 +73,11 @@ fun AppRoot(viewModel: MainViewModel) {
                 AppRoute.WarningSettings -> WarningSettingsScreen(data, viewModel)
                 AppRoute.PrescriptionUsage -> IOSPrescriptionUsageScreen(data, viewModel)
                 AppRoute.Prescriptions -> PrescriptionHistoryScreen(data, viewModel, { go(AppRoute.PrescriptionOverview) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
-                AppRoute.PrescriptionOverview -> PrescriptionOverviewScreen(data, viewModel, { go(AppRoute.AddPrescription) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
+                AppRoute.PrescriptionOverview -> PrescriptionOverviewScreen(data, viewModel, { go(AppRoute.Prescriptions) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
                 AppRoute.TotalPrice -> IOSPrescriptionCostCalculatorScreen(data, viewModel)
                 AppRoute.Database -> DatabaseScreen(data, viewModel, ::go)
                 AppRoute.AddHerb -> AddHerbScreen(data, viewModel) { route = AppRoute.HerbSettings; parent = AppRoute.Home }
-                AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel) { route = AppRoute.Prescriptions; parent = AppRoute.Home }
+                AppRoute.AddPrescription -> PrescriptionHistoryScreen(data, viewModel, { go(AppRoute.PrescriptionOverview) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
                 AppRoute.Manual -> ManualScreen(expandAll)
                 AppRoute.Profiles -> HerbProfilesScreen(data, viewModel)
                 AppRoute.HistoryDetail -> HistoryDetailScreen(data)
