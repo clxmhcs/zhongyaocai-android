@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,22 +49,31 @@ fun AppRoot(viewModel: MainViewModel) {
     val data by viewModel.data.collectAsState()
     var route by rememberSaveable { mutableStateOf(AppRoute.Home) }
     var detailPrescription by remember { mutableStateOf<Prescription?>(null) }
+    var manualExpandAll by rememberSaveable { mutableStateOf(true) }
     val isMain = route in setOf(AppRoute.Home, AppRoute.Herbs, AppRoute.Quick, AppRoute.Prescriptions, AppRoute.Database)
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(route.title, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
-                    if (!isMain) IconButton(onClick = {
-                        route = when (route) {
-                            AppRoute.AddHerb, AppRoute.LowStock -> AppRoute.Herbs
-                            AppRoute.AddPrescription, AppRoute.PrescriptionDetail -> AppRoute.Prescriptions
-                            AppRoute.HistoryDetail, AppRoute.InboundHistory -> AppRoute.Quick
-                            else -> AppRoute.Database
-                        }
-                    }) { Icon(Icons.Default.ArrowBack, "返回") }
+                    when {
+                        route == AppRoute.Manual -> TextButton(onClick = { route = AppRoute.Database }) { Text("关闭") }
+                        !isMain -> IconButton(onClick = {
+                            route = when (route) {
+                                AppRoute.AddHerb, AppRoute.LowStock -> AppRoute.Herbs
+                                AppRoute.AddPrescription, AppRoute.PrescriptionDetail -> AppRoute.Prescriptions
+                                AppRoute.HistoryDetail, AppRoute.InboundHistory -> AppRoute.Quick
+                                else -> AppRoute.Database
+                            }
+                        }) { Icon(Icons.Default.ArrowBack, "返回") }
+                    }
                 },
-                actions = { if (route != AppRoute.Manual) IconButton(onClick = { route = AppRoute.Manual }) { Icon(Icons.Default.Article, "说明书") } },
+                actions = {
+                    when (route) {
+                        AppRoute.Manual -> TextButton(onClick = { manualExpandAll = !manualExpandAll }) { Text(if (manualExpandAll) "全部收起" else "全部展开") }
+                        else -> IconButton(onClick = { route = AppRoute.Manual }) { Icon(Icons.Default.Article, "说明书") }
+                    }
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = AppPaleGreen)
             )
         },
@@ -87,7 +97,7 @@ fun AppRoot(viewModel: MainViewModel) {
                 AppRoute.AddHerb -> AddHerbScreen(data, viewModel, onDone = { route = AppRoute.Herbs })
                 AppRoute.LowStock -> LowStockScreen(data)
                 AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel, onDone = { route = AppRoute.Prescriptions })
-                AppRoute.Manual -> ManualScreen()
+                AppRoute.Manual -> ManualScreen(expandAll = manualExpandAll)
                 AppRoute.Profiles -> HerbProfilesScreen(data, viewModel)
                 AppRoute.HistoryDetail -> HistoryDetailScreen(data)
                 AppRoute.InboundHistory -> InboundHistoryScreen(data)
