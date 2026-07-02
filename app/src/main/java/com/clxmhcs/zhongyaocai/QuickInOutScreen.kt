@@ -1,10 +1,13 @@
 package com.clxmhcs.zhongyaocai
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.ListAlt
@@ -123,29 +127,24 @@ fun QuickInOutScreen(
                     }
                     Row(Modifier.fillMaxWidth().height(320.dp)) {
                         HistoryColumn(data.inRecords, Modifier.weight(1f))
-                        androidx.compose.foundation.layout.Box(Modifier.width(1.dp).fillMaxSize().padding(vertical = 0.dp).then(Modifier), contentAlignment = Alignment.Center) {
-                            androidx.compose.foundation.layout.Box(Modifier.width(1.dp).fillMaxSize().padding(vertical = 0.dp))
-                        }
+                        Spacer(Modifier.width(1.dp).fillMaxHeight().background(Color(0xFFDDDDDD)))
                         OutHistoryColumn(data.outRecords, Modifier.weight(1f))
                     }
                 }
             }
         }
         banner?.let { text ->
-            Text(
-                text,
-                color = Color.White,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp).then(Modifier),
-                fontSize = 13.sp
-            )
+            Row(
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp)
+                    .background(Color(0xFF34A853), RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("✓", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(text, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(start = 8.dp))
+            }
         }
     }
-    errorText?.let { message -> AlertDialog(
-        onDismissRequest = { errorText = null },
-        title = { Text("操作提示") },
-        text = { Text(message) },
-        confirmButton = { TextButton(onClick = { errorText = null }) { Text("确定") } }
-    ) }
+    errorText?.let { message -> AlertDialog(onDismissRequest = { errorText = null }, title = { Text("操作提示") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { errorText = null }) { Text("确定") } }) }
     if (showWhichToClear) AlertDialog(
         onDismissRequest = { showWhichToClear = false },
         title = { Text("❓清空哪个记录？") },
@@ -175,26 +174,11 @@ fun QuickInOutScreen(
 }
 
 @Composable
-private fun InOutMiniCard(
-    title: String,
-    text: String,
-    placeholder: String,
-    primaryTitle: String,
-    onTextChange: (String) -> Unit,
-    onPrimary: () -> Unit,
-    onClear: () -> Unit,
-    modifier: Modifier
-) {
+private fun InOutMiniCard(title: String, text: String, placeholder: String, primaryTitle: String, onTextChange: (String) -> Unit, onPrimary: () -> Unit, onClear: () -> Unit, modifier: Modifier) {
     PageCard(modifier) {
         Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = text,
-            onValueChange = onTextChange,
-            placeholder = { Text(placeholder) },
-            modifier = Modifier.fillMaxWidth().height(185.dp),
-            minLines = 7
-        )
+        OutlinedTextField(value = text, onValueChange = onTextChange, placeholder = { Text(placeholder) }, modifier = Modifier.fillMaxWidth().height(185.dp), minLines = 7)
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             Button(onClick = onPrimary, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppPurple)) { Text(primaryTitle) }
@@ -205,7 +189,7 @@ private fun InOutMiniCard(
 
 @Composable
 private fun DetailEntryCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, modifier: Modifier) {
-    PageCard(modifier) {
+    PageCard(modifier.clickable(onClick = onClick)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, title, tint = AppPurple)
             Spacer(Modifier.width(8.dp))
@@ -218,8 +202,7 @@ private fun DetailEntryCard(title: String, icon: androidx.compose.ui.graphics.ve
 @Composable
 private fun HistoryColumn(records: List<InRecord>, modifier: Modifier) {
     Column(modifier) {
-        HistoryHeader()
-        HorizontalDivider()
+        HistoryHeader(); HorizontalDivider()
         if (records.isEmpty()) Text("暂无入库记录", color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
         else LazyColumn { items(records, key = { it.id }) { record -> HistoryRow(record.name, record.amount); HorizontalDivider() } }
     }
@@ -228,8 +211,7 @@ private fun HistoryColumn(records: List<InRecord>, modifier: Modifier) {
 @Composable
 private fun OutHistoryColumn(records: List<OutRecord>, modifier: Modifier) {
     Column(modifier.padding(start = 8.dp)) {
-        HistoryHeader()
-        HorizontalDivider()
+        HistoryHeader(); HorizontalDivider()
         if (records.isEmpty()) Text("暂无支出记录", color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
         else LazyColumn { items(records, key = { it.id }) { record -> HistoryRow(record.name, record.amount); HorizontalDivider() } }
     }
@@ -246,8 +228,7 @@ private fun HistoryHeader() {
 @Composable
 private fun HistoryRow(name: String, amount: Int) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
-        Text(name, Modifier.weight(1f))
-        Text(amount.toString())
+        Text(name, Modifier.weight(1f)); Text(amount.toString())
     }
 }
 
