@@ -1,6 +1,7 @@
 package com.clxmhcs.zhongyaocai
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,12 +9,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,67 +38,222 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
+
+/** Current iOS FastInOutView layout: two mini cards, detail entry cards, dual history columns. */
+@Composable
+fun QuickInOutScreen(
+    data: AppData,
+    viewModel: MainViewModel,
+    onHistoryDetail: () -> Unit = {},
+    onInboundDetail: () -> Unit = {}
+) {
+    var inboundText by rememberSaveable { mutableStateOf("") }
+    var outboundText by rememberSaveable { mutableStateOf("") }
+    var banner by remember { mutableStateOf<String?>(null) }
+    var errorText by remember { mutableStateOf<String?>(null) }
+    var showWhichToClear by remember { mutableStateOf(false) }
+    var clearTarget by remember { mutableStateOf<String?>(null) }
+
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    InOutMiniCard(
+                        title = "快速入库",
+                        text = inboundText,
+                        placeholder = "逐行输入\n药材名 数量(g)",
+                        primaryTitle = "入库",
+                        onTextChange = { inboundText = it },
+                        onPrimary = {
+                            val check = InventoryLineParser.validateInbound(inboundText, data.herbs)
+                            when {
+                                check.invalidOrMissing.isNotEmpty() -> errorText = "以下药材不存在或格式错误：\n${check.invalidOrMissing.joinToString("\n")}" 
+                                check.items.isEmpty() -> errorText = "请输入有效的入库内容。"
+                                else -> {
+                                    viewModel.commitInbound(check.items)
+                                    inboundText = ""
+                                    banner = "药材已入库成功"
+                                }
+                            }
+                        },
+                        onClear = { inboundText = "" },
+                        modifier = Modifier.weight(1f)
+                    )
+                    InOutMiniCard(
+                        title = "快速支出",
+                        text = outboundText,
+                        placeholder = "逐行输入\n药材名 数量(g)",
+                        primaryTitle = "支出",
+                        onTextChange = { outboundText = it },
+                        onPrimary = {
+                            if (outboundText.isBlank()) {
+                                errorText = "请输入支出内容。"
+                            } else {
+                                val check = InventoryLineParser.validateOutbound(outboundText, data.herbs, data.outboundBalances)
+                                errorText = outboundErrorText(check)
+                                if (errorText == null) {
+                                    viewModel.commitOutbound(check.deductions, check.balancesAfter)
+                                    outboundText = ""
+                                    banner = if (check.deductions.isEmpty()) "本次支出已由「进一余额抵扣」，无需扣减库存" else "药材已支出成功"
+                                }
+                            }
+                        },
+                        onClear = { outboundText = "" },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    DetailEntryCard("历史记录明细", Icons.Default.ListAlt, onHistoryDetail, Modifier.weight(1f))
+                    DetailEntryCard("入库明细", Icons.Default.MoveToInbox, onInboundDetail, Modifier.weight(1f))
+                }
+            }
+            item {
+                PageCard(Modifier.fillMaxWidth()) {
+                    Text("历史记录", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("入库历史", Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                        TextButton(onClick = { showWhichToClear = true }, modifier = Modifier.weight(1f)) { Text("清空历史", color = Color.Red, fontWeight = FontWeight.Bold) }
+                        Text("支出历史", Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    }
+                    Row(Modifier.fillMaxWidth().height(320.dp)) {
+                        HistoryColumn(data.inRecords, Modifier.weight(1f))
+                        androidx.compose.foundation.layout.Box(Modifier.width(1.dp).fillMaxSize().padding(vertical = 0.dp).then(Modifier), contentAlignment = Alignment.Center) {
+                            androidx.compose.foundation.layout.Box(Modifier.width(1.dp).fillMaxSize().padding(vertical = 0.dp))
+                        }
+                        OutHistoryColumn(data.outRecords, Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+        banner?.let { text ->
+            Text(
+                text,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp).then(Modifier),
+                fontSize = 13.sp
+            )
+        }
+    }
+    errorText?.let { message -> AlertDialog(
+        onDismissRequest = { errorText = null },
+        title = { Text("操作提示") },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = { errorText = null }) { Text("确定") } }
+    ) }
+    if (showWhichToClear) AlertDialog(
+        onDismissRequest = { showWhichToClear = false },
+        title = { Text("❓清空哪个记录？") },
+        text = { Text("请选择需要清空的记录。") },
+        confirmButton = {
+            Column {
+                TextButton(onClick = { showWhichToClear = false; clearTarget = "inbound" }) { Text("入库记录") }
+                TextButton(onClick = { showWhichToClear = false; clearTarget = "outbound" }) { Text("支出记录") }
+                TextButton(onClick = { showWhichToClear = false; clearTarget = "all" }) { Text("清空全部", color = Color.Red) }
+            }
+        },
+        dismissButton = { TextButton(onClick = { showWhichToClear = false }) { Text("取消") } }
+    )
+    clearTarget?.let { target ->
+        val targetName = when (target) { "inbound" -> "入库记录"; "outbound" -> "支出记录"; else -> "全部记录" }
+        AlertDialog(
+            onDismissRequest = { clearTarget = null },
+            title = { Text("确定清空 $targetName 吗？") },
+            text = { Text("⚠️该操作将删除选定记录，且无法恢复。") },
+            confirmButton = { TextButton(onClick = {
+                when (target) { "inbound" -> viewModel.clearInRecords(); "outbound" -> viewModel.clearOutRecords(); else -> viewModel.clearAllRecords() }
+                clearTarget = null
+            }) { Text("清空", color = Color.Red) } },
+            dismissButton = { TextButton(onClick = { clearTarget = null }) { Text("取消") } }
+        )
+    }
+}
 
 @Composable
-fun QuickInOutScreen(data: AppData, viewModel: MainViewModel) {
-    var inbound by rememberSaveable { mutableStateOf("") }
-    var outbound by rememberSaveable { mutableStateOf("") }
-    var alertText by remember { mutableStateOf<String?>(null) }
-    var confirmInbound by remember { mutableStateOf<InboundValidation?>(null) }
-    var confirmOutbound by remember { mutableStateOf<OutboundValidation?>(null) }
-    var clearChoice by remember { mutableStateOf(false) }
-    var clearTarget by remember { mutableStateOf<String?>(null) }
-    LazyColumn(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item {
-            PageCard {
-                Text("快速入库", fontWeight = FontWeight.Bold, color = AppCyan)
-                Text("每行：药材名 + 整数克数，例如：白术18 或 白术 18g。药材必须已存在。", color = Color.Gray, fontSize = 12.sp)
-                OutlinedTextField(value = inbound, onValueChange = { inbound = it }, modifier = Modifier.fillMaxWidth().height(130.dp), label = { Text("入库内容") })
-                Spacer(Modifier.height(8.dp))
-                RoundedActionButton("校验并入库", AppCyan, onClick = {
-                    val check = InventoryLineParser.validateInbound(inbound, data.herbs)
-                    when {
-                        inbound.isBlank() -> alertText = "请先输入入库内容。"
-                        check.invalidOrMissing.isNotEmpty() -> alertText = "以下药材不存在或格式错误：\n${check.invalidOrMissing.joinToString("\n")}" 
-                        check.items.isEmpty() -> alertText = "未识别到可入库的数据。"
-                        else -> confirmInbound = check
-                    }
-                }, modifier = Modifier.fillMaxWidth())
-            }
+private fun InOutMiniCard(
+    title: String,
+    text: String,
+    placeholder: String,
+    primaryTitle: String,
+    onTextChange: (String) -> Unit,
+    onPrimary: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier
+) {
+    PageCard(modifier) {
+        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = text,
+            onValueChange = onTextChange,
+            placeholder = { Text(placeholder) },
+            modifier = Modifier.fillMaxWidth().height(185.dp),
+            minLines = 7
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onPrimary, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppPurple)) { Text(primaryTitle) }
+            OutlinedButton(onClick = onClear, modifier = Modifier.weight(1f)) { Text("清空", color = Color.Red) }
         }
-        item {
-            PageCard {
-                Text("快速支出", fontWeight = FontWeight.Bold, color = AppPurple)
-                Text("每行：药材名 + 克数。可填写小数；按每味药分别累计进一扣库存，累计误差小于 1g。", color = Color.Gray, fontSize = 12.sp)
-                OutlinedTextField(value = outbound, onValueChange = { outbound = it }, modifier = Modifier.fillMaxWidth().height(130.dp), label = { Text("支出内容") })
-                Spacer(Modifier.height(8.dp))
-                RoundedActionButton("校验并支出", AppPurple, onClick = {
-                    val check = InventoryLineParser.validateOutbound(outbound, data.herbs, data.outboundBalances)
-                    when {
-                        outbound.isBlank() -> alertText = "请先输入支出内容。"
-                        check.invalidOrMissing.isNotEmpty() && check.insufficient.isNotEmpty() -> alertText = "格式错误或药材不存在：\n${check.invalidOrMissing.joinToString("\n")}\n\n库存不足：\n${check.insufficient.joinToString("\n") { "${it.first}（当前 ${it.second}g）" }}"
-                        check.invalidOrMissing.isNotEmpty() -> alertText = "以下药材不存在或格式错误：\n${check.invalidOrMissing.joinToString("\n")}" 
-                        check.insufficient.isNotEmpty() -> alertText = "以下药材库存不足：\n${check.insufficient.joinToString("\n") { "${it.first}（当前 ${it.second}g）" }}"
-                        else -> confirmOutbound = check
-                    }
-                }, modifier = Modifier.fillMaxWidth())
-            }
-        }
-        item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("历史记录", fontWeight = FontWeight.Bold, fontSize = 17.sp); Spacer(Modifier.weight(1f)); IconButton(onClick = { clearChoice = true }) { androidx.compose.material3.Icon(Icons.Default.MoreVert, "清空记录") } } }
-        val records = (data.inRecords.map { true to it } + data.outRecords.map { false to it }).sortedByDescending { it.second.createdAt }
-        if (records.isEmpty()) item { EmptyHint("暂无快速入库或支出记录。处方保存不会自动扣减库存。") }
-        items(records, key = { it.second.id }) { pair ->
-            val isInbound = pair.first
-            val record = pair.second
-            PageCard { Row(Modifier.fillMaxWidth()) { Text(if (isInbound) "入库" else "支出", color = if (isInbound) AppCyan else AppPurple, fontWeight = FontWeight.Bold); Spacer(Modifier.width(12.dp)); Column { Text("${record.name}  ${record.amount}g"); Text(fullDateLabel(record.createdAt), color = Color.Gray, fontSize = 12.sp) } } }
-        }
-        item { Spacer(Modifier.height(70.dp)) }
     }
-    confirmInbound?.let { check -> AlertDialog(onDismissRequest = { confirmInbound = null }, title = { Text("确认入库") }, text = { Text("本次将入库：\n${check.items.joinToString("\n") { "${it.first} ${it.second}g" }}") }, confirmButton = { TextButton(onClick = { viewModel.commitInbound(check.items); inbound = ""; confirmInbound = null; alertText = "入库成功。" }) { Text("确认") } }, dismissButton = { TextButton(onClick = { confirmInbound = null }) { Text("取消") } }) }
-    confirmOutbound?.let { check -> AlertDialog(onDismissRequest = { confirmOutbound = null }, title = { Text("确认支出") }, text = { Text(if (check.deductions.isEmpty()) "本次支出已由累计余额抵扣，不会扣减整数库存。" else "实际扣减：\n${check.deductions.joinToString("\n") { "${it.first} ${it.second}g" }}") }, confirmButton = { TextButton(onClick = { viewModel.commitOutbound(check.deductions, check.balancesAfter); outbound = ""; confirmOutbound = null; alertText = "支出成功。" }) { Text("确认") } }, dismissButton = { TextButton(onClick = { confirmOutbound = null }) { Text("取消") } }) }
-    alertText?.let { text -> AlertDialog(onDismissRequest = { alertText = null }, title = { Text(if (text.contains("成功")) "操作完成" else "无法执行") }, text = { Text(text) }, confirmButton = { TextButton(onClick = { alertText = null }) { Text("确定") } }) }
-    if (clearChoice) AlertDialog(onDismissRequest = { clearChoice = false }, title = { Text("清空历史记录") }, text = { Text("请选择要清空的记录类型。") }, confirmButton = { Column { TextButton(onClick = { clearChoice = false; clearTarget = "in" }) { Text("清空入库记录") }; TextButton(onClick = { clearChoice = false; clearTarget = "out" }) { Text("清空支出记录") }; TextButton(onClick = { clearChoice = false; clearTarget = "all" }) { Text("清空全部记录", color = Color.Red) } } }, dismissButton = { TextButton(onClick = { clearChoice = false }) { Text("取消") } })
-    clearTarget?.let { target -> AlertDialog(onDismissRequest = { clearTarget = null }, title = { Text("确定清空${if (target == "in") "入库" else if (target == "out") "支出" else "全部"}记录吗？") }, text = { Text("此操作不可恢复，不影响当前药材库存。") }, confirmButton = { TextButton(onClick = { when (target) { "in" -> viewModel.clearInRecords(); "out" -> viewModel.clearOutRecords(); else -> viewModel.clearAllRecords() }; clearTarget = null }) { Text("清空", color = Color.Red) } }, dismissButton = { TextButton(onClick = { clearTarget = null }) { Text("取消") } }) }
+}
+
+@Composable
+private fun DetailEntryCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit, modifier: Modifier) {
+    PageCard(modifier) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, title, tint = AppPurple)
+            Spacer(Modifier.width(8.dp))
+            Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.ArrowForwardIos, null, tint = Color.Gray)
+        }
+    }
+}
+
+@Composable
+private fun HistoryColumn(records: List<InRecord>, modifier: Modifier) {
+    Column(modifier) {
+        HistoryHeader()
+        HorizontalDivider()
+        if (records.isEmpty()) Text("暂无入库记录", color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
+        else LazyColumn { items(records, key = { it.id }) { record -> HistoryRow(record.name, record.amount); HorizontalDivider() } }
+    }
+}
+
+@Composable
+private fun OutHistoryColumn(records: List<OutRecord>, modifier: Modifier) {
+    Column(modifier.padding(start = 8.dp)) {
+        HistoryHeader()
+        HorizontalDivider()
+        if (records.isEmpty()) Text("暂无支出记录", color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
+        else LazyColumn { items(records, key = { it.id }) { record -> HistoryRow(record.name, record.amount); HorizontalDivider() } }
+    }
+}
+
+@Composable
+private fun HistoryHeader() {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
+        Text("药材名", Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text("克数", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun HistoryRow(name: String, amount: Int) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
+        Text(name, Modifier.weight(1f))
+        Text(amount.toString())
+    }
+}
+
+private fun outboundErrorText(check: OutboundValidation): String? = when {
+    check.invalidOrMissing.isNotEmpty() && check.insufficient.isNotEmpty() -> "以下药材不存在或格式错误：\n${check.invalidOrMissing.joinToString("\n")}\n\n余量不足：\n${check.insufficient.joinToString("\n") { "${it.first}（当前余量：${it.second}g）" }}"
+    check.invalidOrMissing.isNotEmpty() -> "以下药材不存在或格式错误：\n${check.invalidOrMissing.joinToString("\n")}" 
+    check.insufficient.isNotEmpty() -> "以下药材余量不足：\n${check.insufficient.joinToString("\n") { "${it.first}（当前余量：${it.second}g）" }}"
+    else -> null
 }
