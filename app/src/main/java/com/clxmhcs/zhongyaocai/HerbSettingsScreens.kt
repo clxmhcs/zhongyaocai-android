@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -93,7 +92,7 @@ fun PriceSettingsScreen(data: AppData, viewModel: MainViewModel) {
                                     viewModel.updateHerb(current.copy(pricePerKg = change.oldPrice)) { error ->
                                         if (error == null) {
                                             highlight = current.name
-                                            message = "「${current.name}」 价格变更已撤销，恢复为原价格： ${"%.2f".format(change.oldPrice)。"
+                                            message = "「${current.name}」 价格变更已撤销，恢复为原价格： ${"%.2f".format(change.oldPrice)}。"
                                             lastChange = null
                                         } else message = error
                                     }

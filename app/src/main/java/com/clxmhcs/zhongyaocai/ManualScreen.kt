@@ -1,24 +1,23 @@
 package com.clxmhcs.zhongyaocai
 
-import androidx.compose.foundation.ExperimentalLayoutApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Megaphone
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -67,7 +66,7 @@ fun ManualScreen(expandAll: Boolean) {
                 Modifier.fillMaxWidth().background(Color.White.copy(alpha = .72f), RoundedCornerShape(14.dp)).padding(12.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                Icon(Icons.Default.Megaphone, "使用提示", tint = AppOrange)
+                Icon(Icons.Default.Info, "使用提示", tint = AppOrange)
                 Spacer(Modifier.width(10.dp))
                 Column {
                     Text("使用提示", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
