@@ -4,5 +4,5 @@ import androidx.compose.runtime.Composable
 
 @Composable
 fun ZhongYaoApp(viewModel: MainViewModel) {
-    AppRoot(viewModel)
+    AppRootIOS(viewModel)
 }
