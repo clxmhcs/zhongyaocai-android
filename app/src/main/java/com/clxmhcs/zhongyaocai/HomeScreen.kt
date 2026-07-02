@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,9 +49,7 @@ fun HomeScreen(data: AppData, onRoute: (AppRoute) -> Unit) {
                 }
             } else {
                 LazyColumn(Modifier.width(420.dp).fillMaxSize()) {
-                    items(herbs, key = { it.id }) { herb ->
-                        InventoryTableRow(herb)
-                    }
+                    items(herbs, key = { it.id }) { herb -> InventoryTableRow(herb) }
                 }
             }
         }
@@ -59,10 +58,7 @@ fun HomeScreen(data: AppData, onRoute: (AppRoute) -> Unit) {
 
 @Composable
 private fun InventoryTableHeader() {
-    Row(
-        modifier = Modifier.width(420.dp).padding(horizontal = 16.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(Modifier.width(420.dp).padding(horizontal = 16.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("药材名", Modifier.width(72.dp), fontSize = 14.sp, color = Color.Gray, maxLines = 1)
         Text("库存", Modifier.width(70.dp), fontSize = 14.sp, color = Color.Gray, maxLines = 1)
         Spacer(Modifier.width(48.dp))
@@ -76,15 +72,9 @@ private fun InventoryTableHeader() {
 private fun InventoryTableRow(herb: Herb) {
     val isLow = herb.stock < herb.warningLevel
     val mainColor = if (isLow) Color.Red else Color(0xFF111111)
-    Row(
-        modifier = Modifier.width(420.dp).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(Modifier.width(420.dp).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(herb.name, Modifier.width(72.dp), color = mainColor, maxLines = 1, overflow = TextOverflow.Clip)
-        Row(Modifier.width(70.dp), horizontalArrangement = Arrangement.End) {
-            Text("${herb.stock}", color = mainColor)
-            Text(" g", color = Color.Black)
-        }
+        Row(Modifier.width(70.dp), horizontalArrangement = Arrangement.End) { Text("${herb.stock}", color = mainColor); Text(" g", color = Color.Black) }
         Spacer(Modifier.width(48.dp))
         Text("${herb.dailyUsage} g (周 ${herb.dailyUsage * 7} g)", Modifier.width(120.dp), color = Color.Gray, maxLines = 1, overflow = TextOverflow.Clip)
         Text("${"%.2f".format(herb.pricePerKg)}", Modifier.width(94.dp), maxLines = 1)
