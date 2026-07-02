@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -38,7 +39,7 @@ val AppPaleGreen = Color(0xFFF2FAEF)
 enum class AppRoute(val title: String) {
     Home("药材余量总览"), Herbs("药材库"), Quick("快速入库 / 支出"), Prescriptions("处方总览"), Database("数据库管理"),
     AddHerb("新增药材"), LowStock("低库存药材"), AddPrescription("保存处方"), Manual("APP说明书"), Profiles("药材资料录入"),
-    HistoryDetail("历史记录明细"), InboundHistory("入库明细")
+    HistoryDetail("历史记录明细"), InboundHistory("入库明细"), PrescriptionDetail("处方详情")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +47,7 @@ enum class AppRoute(val title: String) {
 fun AppRoot(viewModel: MainViewModel) {
     val data by viewModel.data.collectAsState()
     var route by rememberSaveable { mutableStateOf(AppRoute.Home) }
+    var detailPrescription by remember { mutableStateOf<Prescription?>(null) }
     val isMain = route in setOf(AppRoute.Home, AppRoute.Herbs, AppRoute.Quick, AppRoute.Prescriptions, AppRoute.Database)
     Scaffold(
         topBar = {
@@ -55,7 +57,7 @@ fun AppRoot(viewModel: MainViewModel) {
                     if (!isMain) IconButton(onClick = {
                         route = when (route) {
                             AppRoute.AddHerb, AppRoute.LowStock -> AppRoute.Herbs
-                            AppRoute.AddPrescription -> AppRoute.Prescriptions
+                            AppRoute.AddPrescription, AppRoute.PrescriptionDetail -> AppRoute.Prescriptions
                             AppRoute.HistoryDetail, AppRoute.InboundHistory -> AppRoute.Quick
                             else -> AppRoute.Database
                         }
@@ -80,7 +82,7 @@ fun AppRoot(viewModel: MainViewModel) {
                 AppRoute.Home -> HomeScreen(data) { route = it }
                 AppRoute.Herbs -> HerbListScreen(data, viewModel, onAdd = { route = AppRoute.AddHerb }, onLowStock = { route = AppRoute.LowStock })
                 AppRoute.Quick -> QuickInOutScreen(data, viewModel, onHistoryDetail = { route = AppRoute.HistoryDetail }, onInboundDetail = { route = AppRoute.InboundHistory })
-                AppRoute.Prescriptions -> PrescriptionOverviewScreen(data, viewModel, onAdd = { route = AppRoute.AddPrescription })
+                AppRoute.Prescriptions -> PrescriptionOverviewScreen(data, viewModel, onAdd = { route = AppRoute.AddPrescription }, onDetail = { item -> detailPrescription = item; route = AppRoute.PrescriptionDetail })
                 AppRoute.Database -> DatabaseScreen(data, viewModel, onRoute = { route = it })
                 AppRoute.AddHerb -> AddHerbScreen(data, viewModel, onDone = { route = AppRoute.Herbs })
                 AppRoute.LowStock -> LowStockScreen(data)
@@ -89,6 +91,7 @@ fun AppRoot(viewModel: MainViewModel) {
                 AppRoute.Profiles -> HerbProfilesScreen(data, viewModel)
                 AppRoute.HistoryDetail -> HistoryDetailScreen(data)
                 AppRoute.InboundHistory -> InboundHistoryScreen(data)
+                AppRoute.PrescriptionDetail -> detailPrescription?.let { PrescriptionDetailScreen(it, data, viewModel) } ?: Text("未找到处方")
             }
         }
     }
