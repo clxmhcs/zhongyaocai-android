@@ -5,18 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,9 +31,7 @@ val AppOrange = Color(0xFFFF9D3D)
 val AppPaleGreen = Color(0xFFF2FAEF)
 
 enum class AppRoute(val title: String) {
-    Home("药材余量总览"), Herbs("药材库"), Quick("快速入库 / 支出"), Prescriptions("处方总览"), Database("数据库管理"),
-    AddHerb("新增药材"), LowStock("低库存药材"), AddPrescription("保存处方"), Manual("APP说明书"), Profiles("药材资料录入"),
-    HistoryDetail("历史记录明细"), InboundHistory("入库明细"), PrescriptionDetail("处方详情")
+    Home(""), Search("快速查询"), InventoryOverview("药材余量总览"), Overview7Days("余量不足7天药材"), Overview14Days("余量不足14天药材"), LowStock("低库存药材"), Quick("快速入库 / 支出"), FastInbound("快速入库 / 支出"), FastOutbound("快速入库 / 支出"), HighValue("高价值药材"), HerbSettings("药材信息设置"), PrescriptionUsage("处方用量可用天数测算"), Prescriptions("处方管理"), TotalPrice("药方总价计算"), Database("数据库管理"), AddHerb("新增药材"), AddPrescription("保存处方"), Manual("APP说明书"), Profiles("药材资料录入"), HistoryDetail("历史记录明细"), InboundHistory("入库明细"), PrescriptionDetail("处方详情")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,66 +39,48 @@ enum class AppRoute(val title: String) {
 fun AppRoot(viewModel: MainViewModel) {
     val data by viewModel.data.collectAsState()
     var route by rememberSaveable { mutableStateOf(AppRoute.Home) }
-    var detailPrescription by remember { mutableStateOf<Prescription?>(null) }
-    var manualExpandAll by rememberSaveable { mutableStateOf(true) }
-    val isMain = route in setOf(AppRoute.Home, AppRoute.Herbs, AppRoute.Quick, AppRoute.Prescriptions, AppRoute.Database)
+    var parent by rememberSaveable { mutableStateOf(AppRoute.Home) }
+    var detail by remember { mutableStateOf<Prescription?>(null) }
+    var searchText by rememberSaveable { mutableStateOf("") }
+    var expandAll by rememberSaveable { mutableStateOf(true) }
+    fun go(target: AppRoute) { parent = route; route = target }
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            if (route != AppRoute.Home) CenterAlignedTopAppBar(
                 title = { Text(route.title, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
-                    when {
-                        route == AppRoute.Manual -> TextButton(onClick = { route = AppRoute.Database }) { Text("关闭") }
-                        !isMain -> IconButton(onClick = {
-                            route = when (route) {
-                                AppRoute.AddHerb, AppRoute.LowStock -> AppRoute.Herbs
-                                AppRoute.AddPrescription, AppRoute.PrescriptionDetail -> AppRoute.Prescriptions
-                                AppRoute.HistoryDetail, AppRoute.InboundHistory -> AppRoute.Quick
-                                else -> AppRoute.Database
-                            }
-                        }) { Icon(Icons.Default.ArrowBack, "返回") }
-                    }
+                    if (route == AppRoute.Manual) TextButton(onClick = { route = parent }) { Text("关闭") }
+                    else IconButton(onClick = { route = parent }) { Icon(Icons.Default.ArrowBack, "返回") }
                 },
-                actions = {
-                    when (route) {
-                        AppRoute.Manual -> TextButton(onClick = { manualExpandAll = !manualExpandAll }) { Text(if (manualExpandAll) "全部收起" else "全部展开") }
-                        else -> IconButton(onClick = { route = AppRoute.Manual }) { Icon(Icons.Default.Article, "说明书") }
-                    }
-                },
+                actions = { if (route == AppRoute.Manual) TextButton(onClick = { expandAll = !expandAll }) { Text(if (expandAll) "全部收起" else "全部展开") } },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = AppPaleGreen)
             )
-        },
-        bottomBar = {
-            if (isMain) NavigationBar {
-                AppNavItem(route, AppRoute.Home, Icons.Default.Home, "首页") { route = AppRoute.Home }
-                AppNavItem(route, AppRoute.Herbs, Icons.Default.Inventory2, "药材") { route = AppRoute.Herbs }
-                AppNavItem(route, AppRoute.Quick, Icons.Default.ReceiptLong, "出入库") { route = AppRoute.Quick }
-                AppNavItem(route, AppRoute.Prescriptions, Icons.Default.Article, "处方") { route = AppRoute.Prescriptions }
-                AppNavItem(route, AppRoute.Database, Icons.Default.Settings, "管理") { route = AppRoute.Database }
-            }
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).background(AppPaleGreen)) {
+        Box(Modifier.fillMaxSize().padding(padding).background(if (route == AppRoute.Home) Color.Transparent else AppPaleGreen)) {
             when (route) {
-                AppRoute.Home -> HomeScreen(data) { route = it }
-                AppRoute.Herbs -> HerbListScreen(data, viewModel, onAdd = { route = AppRoute.AddHerb }, onLowStock = { route = AppRoute.LowStock })
-                AppRoute.Quick -> QuickInOutScreen(data, viewModel, onHistoryDetail = { route = AppRoute.HistoryDetail }, onInboundDetail = { route = AppRoute.InboundHistory })
-                AppRoute.Prescriptions -> PrescriptionOverviewScreen(data, viewModel, onAdd = { route = AppRoute.AddPrescription }, onDetail = { item -> detailPrescription = item; route = AppRoute.PrescriptionDetail })
-                AppRoute.Database -> DatabaseScreen(data, viewModel, onRoute = { route = it })
-                AppRoute.AddHerb -> AddHerbScreen(data, viewModel, onDone = { route = AppRoute.Herbs })
+                AppRoute.Home -> HomeScreen(data, { go(it) }, { value -> searchText = value; go(AppRoute.Search) })
+                AppRoute.Search -> InventorySearchScreen(data, searchText)
+                AppRoute.InventoryOverview -> InventoryOverviewScreen(data)
+                AppRoute.Overview7Days -> RemainingDaysScreen(data, route.title, 0.0, 7.0)
+                AppRoute.Overview14Days -> RemainingDaysScreen(data, route.title, 7.0, 14.0)
                 AppRoute.LowStock -> LowStockScreen(data)
-                AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel, onDone = { route = AppRoute.Prescriptions })
-                AppRoute.Manual -> ManualScreen(expandAll = manualExpandAll)
+                AppRoute.Quick, AppRoute.FastInbound, AppRoute.FastOutbound -> QuickInOutScreen(data, viewModel, { go(AppRoute.HistoryDetail) }, { go(AppRoute.InboundHistory) })
+                AppRoute.HighValue -> HighValueHerbsScreen(data)
+                AppRoute.HerbSettings -> HerbListScreen(data, viewModel, { go(AppRoute.AddHerb) }, { go(AppRoute.LowStock) })
+                AppRoute.PrescriptionUsage -> PrescriptionUsageScreen(data)
+                AppRoute.Prescriptions -> PrescriptionOverviewScreen(data, viewModel, { go(AppRoute.AddPrescription) }, { item -> detail = item; go(AppRoute.PrescriptionDetail) })
+                AppRoute.TotalPrice -> PrescriptionCostCalculatorScreen(data)
+                AppRoute.Database -> DatabaseScreen(data, viewModel, ::go)
+                AppRoute.AddHerb -> AddHerbScreen(data, viewModel) { route = AppRoute.HerbSettings }
+                AppRoute.AddPrescription -> AddPrescriptionScreen(data, viewModel) { route = AppRoute.Prescriptions }
+                AppRoute.Manual -> ManualScreen(expandAll)
                 AppRoute.Profiles -> HerbProfilesScreen(data, viewModel)
                 AppRoute.HistoryDetail -> HistoryDetailScreen(data)
                 AppRoute.InboundHistory -> InboundHistoryScreen(data)
-                AppRoute.PrescriptionDetail -> detailPrescription?.let { PrescriptionDetailScreen(it, data, viewModel) } ?: Text("未找到处方")
+                AppRoute.PrescriptionDetail -> detail?.let { PrescriptionDetailScreen(it, data, viewModel) } ?: Text("未找到处方")
             }
         }
     }
-}
-
-@Composable
-private fun AppNavItem(current: AppRoute, target: AppRoute, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    NavigationBarItem(selected = current == target, onClick = onClick, icon = { Icon(icon, label) }, label = { Text(label) })
 }
