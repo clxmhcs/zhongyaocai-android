@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -76,13 +77,7 @@ fun QuickInOutScreen(data: AppData, viewModel: MainViewModel) {
                 }, modifier = Modifier.fillMaxWidth())
             }
         }
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("历史记录", fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = { clearChoice = true }) { androidx.compose.material3.Icon(Icons.Default.MoreVert, "清空记录") }
-            }
-        }
+        item { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("历史记录", fontWeight = FontWeight.Bold, fontSize = 17.sp); Spacer(Modifier.weight(1f)); IconButton(onClick = { clearChoice = true }) { androidx.compose.material3.Icon(Icons.Default.MoreVert, "清空记录") } } }
         val records = (data.inRecords.map { true to it } + data.outRecords.map { false to it }).sortedByDescending { it.second.createdAt }
         if (records.isEmpty()) item { EmptyHint("暂无快速入库或支出记录。处方保存不会自动扣减库存。") }
         items(records, key = { it.second.id }) { pair ->
@@ -92,31 +87,9 @@ fun QuickInOutScreen(data: AppData, viewModel: MainViewModel) {
         }
         item { Spacer(Modifier.height(70.dp)) }
     }
-    confirmInbound?.let { check -> AlertDialog(
-        onDismissRequest = { confirmInbound = null },
-        title = { Text("确认入库") },
-        text = { Text("本次将入库：\n${check.items.joinToString("\n") { "${it.first} ${it.second}g" }}") },
-        confirmButton = { TextButton(onClick = { viewModel.commitInbound(check.items); inbound = ""; confirmInbound = null; alertText = "入库成功。" }) { Text("确认") } },
-        dismissButton = { TextButton(onClick = { confirmInbound = null }) { Text("取消") } }
-    ) }
-    confirmOutbound?.let { check -> AlertDialog(
-        onDismissRequest = { confirmOutbound = null },
-        title = { Text("确认支出") },
-        text = { Text(if (check.deductions.isEmpty()) "本次支出已由累计余额抵扣，不会扣减整数库存。" else "实际扣减：\n${check.deductions.joinToString("\n") { "${it.first} ${it.second}g" }}") },
-        confirmButton = { TextButton(onClick = { viewModel.commitOutbound(check.deductions, check.balancesAfter); outbound = ""; confirmOutbound = null; alertText = "支出成功。" }) { Text("确认") } },
-        dismissButton = { TextButton(onClick = { confirmOutbound = null }) { Text("取消") } }
-    ) }
+    confirmInbound?.let { check -> AlertDialog(onDismissRequest = { confirmInbound = null }, title = { Text("确认入库") }, text = { Text("本次将入库：\n${check.items.joinToString("\n") { "${it.first} ${it.second}g" }}") }, confirmButton = { TextButton(onClick = { viewModel.commitInbound(check.items); inbound = ""; confirmInbound = null; alertText = "入库成功。" }) { Text("确认") } }, dismissButton = { TextButton(onClick = { confirmInbound = null }) { Text("取消") } }) }
+    confirmOutbound?.let { check -> AlertDialog(onDismissRequest = { confirmOutbound = null }, title = { Text("确认支出") }, text = { Text(if (check.deductions.isEmpty()) "本次支出已由累计余额抵扣，不会扣减整数库存。" else "实际扣减：\n${check.deductions.joinToString("\n") { "${it.first} ${it.second}g" }}") }, confirmButton = { TextButton(onClick = { viewModel.commitOutbound(check.deductions, check.balancesAfter); outbound = ""; confirmOutbound = null; alertText = "支出成功。" }) { Text("确认") } }, dismissButton = { TextButton(onClick = { confirmOutbound = null }) { Text("取消") } }) }
     alertText?.let { text -> AlertDialog(onDismissRequest = { alertText = null }, title = { Text(if (text.contains("成功")) "操作完成" else "无法执行") }, text = { Text(text) }, confirmButton = { TextButton(onClick = { alertText = null }) { Text("确定") } }) }
-    if (clearChoice) AlertDialog(
-        onDismissRequest = { clearChoice = false }, title = { Text("清空历史记录") }, text = { Text("请选择要清空的记录类型。") },
-        confirmButton = { Column { TextButton(onClick = { clearChoice = false; clearTarget = "in" }) { Text("清空入库记录") }; TextButton(onClick = { clearChoice = false; clearTarget = "out" }) { Text("清空支出记录") }; TextButton(onClick = { clearChoice = false; clearTarget = "all" }) { Text("清空全部记录", color = Color.Red) } } },
-        dismissButton = { TextButton(onClick = { clearChoice = false }) { Text("取消") } }
-    )
-    clearTarget?.let { target -> AlertDialog(
-        onDismissRequest = { clearTarget = null },
-        title = { Text("确定清空${if (target == "in") "入库" else if (target == "out") "支出" else "全部"}记录吗？") },
-        text = { Text("此操作不可恢复，不影响当前药材库存。") },
-        confirmButton = { TextButton(onClick = { when (target) { "in" -> viewModel.clearInRecords(); "out" -> viewModel.clearOutRecords(); else -> viewModel.clearAllRecords() }; clearTarget = null }) { Text("清空", color = Color.Red) } },
-        dismissButton = { TextButton(onClick = { clearTarget = null }) { Text("取消") } }
-    ) }
+    if (clearChoice) AlertDialog(onDismissRequest = { clearChoice = false }, title = { Text("清空历史记录") }, text = { Text("请选择要清空的记录类型。") }, confirmButton = { Column { TextButton(onClick = { clearChoice = false; clearTarget = "in" }) { Text("清空入库记录") }; TextButton(onClick = { clearChoice = false; clearTarget = "out" }) { Text("清空支出记录") }; TextButton(onClick = { clearChoice = false; clearTarget = "all" }) { Text("清空全部记录", color = Color.Red) } } }, dismissButton = { TextButton(onClick = { clearChoice = false }) { Text("取消") } })
+    clearTarget?.let { target -> AlertDialog(onDismissRequest = { clearTarget = null }, title = { Text("确定清空${if (target == "in") "入库" else if (target == "out") "支出" else "全部"}记录吗？") }, text = { Text("此操作不可恢复，不影响当前药材库存。") }, confirmButton = { TextButton(onClick = { when (target) { "in" -> viewModel.clearInRecords(); "out" -> viewModel.clearOutRecords(); else -> viewModel.clearAllRecords() }; clearTarget = null }) { Text("清空", color = Color.Red) } }, dismissButton = { TextButton(onClick = { clearTarget = null }) { Text("取消") } }) }
 }
