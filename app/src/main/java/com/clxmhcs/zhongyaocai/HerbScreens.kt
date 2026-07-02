@@ -1,5 +1,6 @@
 package com.clxmhcs.zhongyaocai
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -56,7 +58,7 @@ fun HerbListScreen(data: AppData, viewModel: MainViewModel, onAdd: () -> Unit, o
 @Composable
 fun HerbRow(herb: Herb, onClick: () -> Unit = {}) {
     val low = herb.stock <= herb.warningLevel
-    PageCard(Modifier.fillMaxWidth().then(Modifier)) {
+    PageCard(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(herb.name, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
@@ -93,17 +95,9 @@ private fun HerbEditDialog(herb: Herb, viewModel: MainViewModel, onDismiss: () -
                 viewModel.updateHerb(updated) { result -> if (result == null) onDismiss() else error = result }
             }) { Text("保存") }
         },
-        dismissButton = {
-            Row { TextButton(onClick = { deleteConfirm = true }) { Text("删除", color = Color.Red) }; TextButton(onClick = onDismiss) { Text("取消") } }
-        }
+        dismissButton = { Row { TextButton(onClick = { deleteConfirm = true }) { Text("删除", color = Color.Red) }; TextButton(onClick = onDismiss) { Text("取消") } } }
     )
-    if (deleteConfirm) AlertDialog(
-        onDismissRequest = { deleteConfirm = false },
-        title = { Text("确定删除 ${herb.name} 吗？") },
-        text = { Text("删除药材不会删除已有处方、入库或支出记录。") },
-        confirmButton = { TextButton(onClick = { viewModel.deleteHerb(herb.id); onDismiss() }) { Text("删除", color = Color.Red) } },
-        dismissButton = { TextButton(onClick = { deleteConfirm = false }) { Text("取消") } }
-    )
+    if (deleteConfirm) AlertDialog(onDismissRequest = { deleteConfirm = false }, title = { Text("确定删除 ${herb.name} 吗？") }, text = { Text("删除药材不会删除已有处方、入库或支出记录。") }, confirmButton = { TextButton(onClick = { viewModel.deleteHerb(herb.id); onDismiss() }) { Text("删除", color = Color.Red) } }, dismissButton = { TextButton(onClick = { deleteConfirm = false }) { Text("取消") } })
 }
 
 @Composable
@@ -150,11 +144,5 @@ fun AddHerbScreen(data: AppData, viewModel: MainViewModel, onDone: () -> Unit) {
         items(data.addHistories.sortedByDescending { it.createdAt }, key = { it.id }) { history -> PageCard { Text("${history.name}  ${history.amount}g"); Text(fullDateLabel(history.createdAt), color = Color.Gray, fontSize = 12.sp) } }
         item { RoundedActionButton("完成", AppCyan, onClick = onDone, modifier = Modifier.fillMaxWidth()) }
     }
-    if (clearConfirm) AlertDialog(
-        onDismissRequest = { clearConfirm = false },
-        title = { Text("清空历史新增记录？") },
-        text = { Text("只清空新增记录，不影响现有药材及其库存。") },
-        confirmButton = { TextButton(onClick = { viewModel.clearAddHistory(); clearConfirm = false }) { Text("清空", color = Color.Red) } },
-        dismissButton = { TextButton(onClick = { clearConfirm = false }) { Text("取消") } }
-    )
+    if (clearConfirm) AlertDialog(onDismissRequest = { clearConfirm = false }, title = { Text("清空历史新增记录？") }, text = { Text("只清空新增记录，不影响现有药材及其库存。") }, confirmButton = { TextButton(onClick = { viewModel.clearAddHistory(); clearConfirm = false }) { Text("清空", color = Color.Red) } }, dismissButton = { TextButton(onClick = { clearConfirm = false }) { Text("取消") } })
 }
