@@ -50,16 +50,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveProfile(profile: HerbProfile) = viewModelScope.launch { repository.saveHerbProfile(profile) }
     fun deleteProfile(id: String) = viewModelScope.launch { repository.deleteHerbProfile(id) }
     fun overwriteHerbs(items: List<Herb>) = viewModelScope.launch { repository.overwriteHerbs(items) }
-    fun setResetPassword(password: String, done: (String?) -> Unit) = viewModelScope.launch { done(repository.setResetPassword(password)) }
+
+    fun setResetPassword(password: String, done: (String?) -> Unit) = viewModelScope.launch {
+        val trimmed = password.trim()
+        if (trimmed.isEmpty()) {
+            done("密码不能为空，请重新点击“药材余量重置”设置密码。")
+        } else {
+            val next = data.value.copy(stockResetPasswordHash = sha256(trimmed))
+            done(repository.restoreBackup(json.encodeToString(AppData.serializer(), next)))
+        }
+    }
+
     fun verifyResetPassword(password: String, done: (ResetResult) -> Unit) = viewModelScope.launch {
         val expected = data.value.stockResetPasswordHash
         done(when {
             expected == null -> ResetResult.NeedsPasswordSetup
-            sha256(password) != expected -> ResetResult.WrongPassword
+            sha256(password.trim()) != expected -> ResetResult.WrongPassword
             else -> ResetResult.Success
         })
     }
-    fun resetStock(password: String, done: (ResetResult) -> Unit) = viewModelScope.launch { done(repository.resetStock(password)) }
+
+    fun resetStock(password: String, done: (ResetResult) -> Unit) = viewModelScope.launch { done(repository.resetStock(password.trim())) }
     fun exportBackup(): String = repository.exportBackup()
     fun restoreBackup(text: String, done: (String?) -> Unit) = viewModelScope.launch { done(repository.restoreBackup(text)) }
 }
