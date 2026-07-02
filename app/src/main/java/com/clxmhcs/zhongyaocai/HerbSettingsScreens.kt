@@ -46,12 +46,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+private data class PriceChange(val herbId: String, val name: String, val oldPrice: Double, val newPrice: Double)
+
 @Composable
 fun HerbSettingsHubScreen(onAdd: () -> Unit, onPrice: () -> Unit, onWarning: () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFFD1EDFF), Color(0xFFEBF8FF)))).padding(horizontal = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFFD1EDFF), Color(0xFFEBF8FF)))).padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("药材信息设置", fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
         HerbSettingsCard("新增药材", "添加新的药材信息", Icons.Default.Add, onAdd)
         HerbSettingsCard("设置药材价格", "快速设置药材价格", Icons.Default.AttachMoney, onPrice)
@@ -61,10 +60,7 @@ fun HerbSettingsHubScreen(onAdd: () -> Unit, onPrice: () -> Unit, onWarning: () 
 
 @Composable
 private fun HerbSettingsCard(title: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(Color.White.copy(alpha = .55f), RoundedCornerShape(22.dp)).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(Modifier.fillMaxWidth().background(Color.White.copy(alpha = .55f), RoundedCornerShape(22.dp)).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(44.dp).background(Brush.linearGradient(listOf(Color(0xFFFF7AA2), Color(0xFFFFC47B))), CircleShape), contentAlignment = Alignment.Center) { Icon(icon, null, tint = Color.White) }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) { Text(title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold); Text(subtitle, fontSize = 13.sp, color = Color.Gray) }
@@ -78,11 +74,34 @@ fun PriceSettingsScreen(data: AppData, viewModel: MainViewModel) {
     var price by rememberSaveable { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
     var highlight by remember { mutableStateOf<String?>(null) }
+    var lastChange by remember { mutableStateOf<PriceChange?>(null) }
     val herbs = data.herbs.sortedByDescending { it.pricePerKg }
     LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(0.dp)) {
         item {
             Column(Modifier.padding(16.dp).background(Color.White.copy(alpha = .8f), RoundedCornerShape(12.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                message?.let { text -> Row { Text(text, modifier = Modifier.weight(1f)); if (text.contains("已由")) OutlinedButton(onClick = {}) { Text("撤销") } } }
+                message?.let { text ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text, modifier = Modifier.weight(1f))
+                        if (lastChange != null) {
+                            OutlinedButton(onClick = {
+                                val change = lastChange ?: return@OutlinedButton
+                                val current = data.herbs.firstOrNull { it.id == change.herbId }
+                                if (current == null) {
+                                    message = "⚠️撤销失败：找不到对应药材（可能已删除）。"
+                                    lastChange = null
+                                } else {
+                                    viewModel.updateHerb(current.copy(pricePerKg = change.oldPrice)) { error ->
+                                        if (error == null) {
+                                            highlight = current.name
+                                            message = "「${current.name}」 价格变更已撤销，恢复为原价格： ${"%.2f".format(change.oldPrice)。"
+                                            lastChange = null
+                                        } else message = error
+                                    }
+                                }
+                            }) { Text("撤销") }
+                        }
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(name, { name = it }, label = { Text("药材名") }, modifier = Modifier.weight(1f), singleLine = true)
                     OutlinedTextField(price, { price = it }, label = { Text("价格") }, modifier = Modifier.width(100.dp), singleLine = true)
@@ -100,8 +119,14 @@ fun PriceSettingsScreen(data: AppData, viewModel: MainViewModel) {
                         else if (next == null) message = "⚠️价格格式无效，请输入有效数字。"
                         else {
                             val old = herb.pricePerKg
-                            viewModel.updateHerb(herb.copy(pricePerKg = next)) { error -> message = error ?: "「${herb.name}」 价格已由 ${"%.2f".format(old)} 变更为： ${"%.2f".format(next)}。" }
-                            highlight = herb.name; name = ""; price = ""
+                            viewModel.updateHerb(herb.copy(pricePerKg = next)) { error ->
+                                if (error == null) {
+                                    message = "「${herb.name}」 价格已由 ${"%.2f".format(old)} 变更为： ${"%.2f".format(next)}。"
+                                    lastChange = PriceChange(herb.id, herb.name, old, next)
+                                    highlight = herb.name
+                                } else message = error
+                            }
+                            name = ""; price = ""
                         }
                     }) { Text("更新") }
                 }
@@ -110,9 +135,10 @@ fun PriceSettingsScreen(data: AppData, viewModel: MainViewModel) {
         item { Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) { Text("药材名", Modifier.width(100.dp), color = Color.Gray); Text("价格(元/kg)", Modifier.width(100.dp), color = Color.Gray); Text("库存", color = Color.Gray) }; HorizontalDivider() }
         items(herbs, key = { it.id }) { herb ->
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                Text(herb.name, Modifier.width(100.dp), color = if (highlight == herb.name) Color.Red else Color.Unspecified)
-                Text("${"%.2f".format(herb.pricePerKg)}", Modifier.width(100.dp), color = if (highlight == herb.name) Color.Red else Color.Unspecified)
-                Text(herb.stock.toString(), color = if (highlight == herb.name) Color.Red else Color.Unspecified)
+                val hit = highlight == herb.name
+                Text(herb.name, Modifier.width(100.dp), color = if (hit) Color.Red else Color.Unspecified)
+                Text("${"%.2f".format(herb.pricePerKg)}", Modifier.width(100.dp), color = if (hit) Color.Red else Color.Unspecified)
+                Text(herb.stock.toString(), color = if (hit) Color.Red else Color.Unspecified)
             }
         }
     }
