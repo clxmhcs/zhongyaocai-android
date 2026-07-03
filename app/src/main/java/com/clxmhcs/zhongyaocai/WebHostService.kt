@@ -105,7 +105,7 @@ class WebHostService : Service() {
                 putExtra("com.termux.RUN_COMMAND_WORKDIR", workDir)
                 putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
             }
-            sendBroadcast(command)
+            startService(command)
         } catch (_: Exception) {
             updateNotification("无法调用 Termux。请安装 Termux:API 并允许外部命令。")
         }
